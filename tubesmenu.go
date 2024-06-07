@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type User struct {
 	ID        int
@@ -39,7 +41,7 @@ var registerAkun [maxUser]User
 
 func PenggunaAktif() {
 	activeUser[0] = User{ID: 100000, nama: "John", pass: "John123", saldo: 10000, perizinan: true, admin: false}
-	activeUser[1] = User{ID: 100001, nama: "Alice", pass: "AlicePretty", saldo: 15000, perizinan: true, admin: false}
+	activeUser[1] = User{ID: 100001, nama: "Imelda", pass: "3535", saldo: 15000, perizinan: true, admin: false}
 	activeUser[2] = User{ID: 100002, nama: "Zayn", pass: "Zayn01", saldo: 1500000, perizinan: true, admin: false}
 	activeUser[3] = User{ID: 100003, nama: "Angel", pass: "2203", saldo: 8500000, perizinan: true, admin: true}
 	activeUser[4] = User{ID: 100004, nama: "Nico", pass: "0407", saldo: 27062023, perizinan: true, admin: false}
@@ -67,7 +69,6 @@ func menu() {
 		fmt.Println()
 		if pilih == 1 {
 			login()
-			menuUser()
 		} else if pilih == 2 {
 			registrasi()
 			loginAdmin()
@@ -78,12 +79,13 @@ func menu() {
 func menuAdmin(user, pass string) {
 	var pilih int
 	if cekAkunAdmin(user, pass) {
-		for pilih != 3 {
+		for pilih != 4 {
 			fmt.Println("-----------------------------------------------")
 			fmt.Println("Pilih menu yang ingin diakses:")
 			fmt.Println("1. Akun yang telah disetujui")
 			fmt.Println("2. Akun yang belum disetujui")
-			fmt.Println("3. Exit")
+			fmt.Println("3. Hapus Akun")
+			fmt.Println("4. Keluar")
 			fmt.Print("Pilih menu yang ingin diakses: ")
 			fmt.Scan(&pilih)
 			fmt.Println("-----------------------------------------------")
@@ -92,30 +94,36 @@ func menuAdmin(user, pass string) {
 				cetaksemuaAkun()
 			} else if pilih == 2 {
 				persetujuanAkun()
+			} else if pilih == 3 {
+				hapusAkun()
 			}
 		}
 	}
 }
 
-func menuUser() {
+func menuUser(username, pass string) {
 	var pilih int
-	for pilih != 4 {
+	idx := cariAkun(username)
+	for pilih != 5 {
 		fmt.Println("-----------------------------------------------")
 		fmt.Println("Pilih menu dibawah ini:")
 		fmt.Println("1. Transfer")
 		fmt.Println("2. Bayar")
 		fmt.Println("3. Informasi Saldo")
-		fmt.Println("4. Exit")
+		fmt.Println("4. Riwayat Transaksi")
+		fmt.Println("5. Kembali ke halaman depan")
 		fmt.Print("Pilih menu yang ingin diakses: ")
 		fmt.Scan(&pilih)
 		fmt.Println("-----------------------------------------------")
 		fmt.Println()
 		if pilih == 1 {
-			kirimUang()
+			kirimUang(idx)
 		} else if pilih == 2 {
 			pembayaran()
 		} else if pilih == 3 {
-			cetakSaldo(activeUser[totalpengguna].ID)
+			cetakSaldo(idx)
+		} else if pilih == 4 {
+			cetakTransaksi()
 		}
 	}
 }
@@ -167,14 +175,15 @@ func registrasi() {
 	registerAkun[id].saldo = 0
 	belumsetuju++
 	fmt.Println()
-	cetakAkun(id)
+	cetakAkunRegister(id)
 }
 
 func cetakSaldo(id int) {
 	var jawab string
+	idx := id % 100000
 	fmt.Println("-----------------------------------------------")
-	fmt.Println("Halo, Pengguna", activeUser[totalpengguna-1].nama, "sisa saldo Anda sekarang:")
-	fmt.Printf("Rp.%d, -\n", activeUser[totalpengguna-1].saldo)
+	fmt.Printf("Halo, Pengguna %s, sisa saldo Anda sekarang:\n", activeUser[(idx)].nama)
+	fmt.Printf("Rp.%d, -\n", activeUser[(idx)].saldo)
 	fmt.Print("Apakah Anda ingin melakukan Top-Up? (Iya/Tidak)? ")
 	fmt.Scan(&jawab)
 	fmt.Println("-----------------------------------------------")
@@ -183,19 +192,31 @@ func cetakSaldo(id int) {
 	}
 }
 
-func cetakAkun(id int) {
-	fmt.Println("Detail Akun Anda:")
+func cetakAkunRegister(id int) {
+	fmt.Println("Detail Akun:")
 	fmt.Printf("ID: %d\n", registerAkun[id].ID)
 	fmt.Printf("Nama: %s\n", registerAkun[id].nama)
 	fmt.Printf("Saldo: %d\n", registerAkun[id].saldo)
-	fmt.Printf("Perizinan: Pending")
 	fmt.Println()
 }
 
-func cekAkun(nama string) {
+func cetakAkunTerdaftar(id int) {
+	fmt.Println("Detail Akun:")
+	fmt.Printf("ID: %d\n", activeUser[id].ID)
+	fmt.Printf("Nama: %s\n", activeUser[id].nama)
+	fmt.Printf("Saldo: %d\n", activeUser[id].saldo)
+	fmt.Println()
+}
+
+func cekAkun(nama string, pass string) {
+	// Sequential Search
 	for i := 0; i < totalpengguna; i++ {
-		if activeUser[i].nama == nama && activeUser[i].perizinan {
+		if activeUser[i].nama == nama && activeUser[i].pass == pass && activeUser[i].perizinan && !activeUser[i].admin {
 			fmt.Println("--- Login Berhasil ---")
+		} else {
+			if cekAkunAdmin(nama, pass) {
+				menuAdmin(nama, pass)
+			}
 		}
 	}
 }
@@ -217,7 +238,8 @@ func login() {
 	fmt.Print("Masukan password Anda: ")
 	fmt.Scan(&pass)
 	fmt.Println("-----------------------------------------------")
-	cekAkun(username)
+	cekAkun(username, pass)
+	menuUser(username, pass)
 }
 
 func loginAdmin() {
@@ -248,34 +270,149 @@ func cariAkun(user string) int {
 	return -1
 }
 
-func kirimUang() {
+func hapusAkun() {
+	var ID, idx int
+	fmt.Print("Masukan ID akun yang ingin dihapus: ")
+	fmt.Scan(&ID)
+	for i := 0; i < totalpengguna; i++ {
+		if activeUser[i].ID == ID {
+			idx = i
+		}
+	}
+	cetakAkunTerdaftar(idx)
+	for i := idx; i < totalpengguna-1; i++ {
+		activeUser[i] = activeUser[i+1]
+	}
+	totalpengguna--
+}
+
+func kirimUang(id int) {
 	var username string
+	var jawab string
 	var tf int
-	fmt.Print("Masukan username yang ingin ditransfer: ")
+	fmt.Println("-----------------------------------------------")
+	fmt.Print("Masukan Username yang ingin ditransfer: ")
 	fmt.Scan(&username)
 	fmt.Print("Masukan jumlah uang yang ingin ditransfer: ")
 	fmt.Scan(&tf)
-	activeUser[totalpengguna-1].saldo = activeUser[totalpengguna-1].saldo - tf
+	for tf > activeUser[id].saldo {
+		fmt.Println()
+		fmt.Print("Saldo Anda tidak mencukupi, mohon ketik kembali nominal yang ingin ditransfer: ")
+		fmt.Scan(&tf)
+	}
+	idx := cariAkun(username)
+	activeUser[id].saldo = activeUser[id].saldo - tf
+	activeUser[idx].saldo = activeUser[idx].saldo + tf
+	fmt.Println("Apakah Anda ingin mencetak riwayat Transfer (Ya/Tidak)? ")
+	fmt.Scan(&jawab)
+	fmt.Println("-----------------------------------------------")
+	fmt.Println()
+	if jawab == "Ya" {
+		fmt.Println("-----------------------------------------------")
+		fmt.Printf("Transfer dari %d atas nama %s\n", activeUser[id].ID, activeUser[id].nama)
+		fmt.Println("ke", activeUser[idx].nama, "sebanyak:")
+		fmt.Printf("Rp. %d, -\n", tf)
+		fmt.Println("-----------------------------------------------")
+		fmt.Println()
+	}
 }
 
 func topUp(id int) {
 	var jumlahTopUp int
 	fmt.Print("Masukkan jumlah saldo yang ingin ditambahkan: ")
 	fmt.Scan(&jumlahTopUp)
-	activeUser[totalpengguna-1].saldo += jumlahTopUp
-	fmt.Printf("Saldo berhasil ditambahkan. Saldo sekarang: Rp.%d,-\n", activeUser[totalpengguna-1].saldo)
+	activeUser[id].saldo += jumlahTopUp
+	fmt.Printf("Saldo berhasil ditambahkan. Saldo sekarang: Rp.%d,-\n", activeUser[id].saldo)
+}
+
+func opsiRiwayatTransaksi() {
+	var jawab int
+	for jawab != 4 {
+		fmt.Println("-----------------------------------------------")
+		fmt.Println("Data di atas telah di-update secara real time")
+		fmt.Println("Pilih menu di bawah ini:")
+		fmt.Println("1. Tampilkan dari nominal terbesar ke terkecil")
+		fmt.Println("2. Tampilkan dari nominal terkecil ke terbesar")
+		fmt.Println("3. Hapus riwayat Transaksi")
+		fmt.Println("4. Keluar dari halaman ini")
+		fmt.Print("Masukan jawaban Anda: ")
+		fmt.Scan(&jawab)
+		fmt.Println("-----------------------------------------------")
+		fmt.Println()
+		if jawab == 1 {
+			sortTransaksiDescend()
+			cetakTransaksi()
+		} else if jawab == 2 {
+			sortTransaksiAscend()
+			cetakTransaksi()
+		} else if jawab == 3 {
+			hapusRiwayat()
+			cetakTransaksi()
+		}
+	}
 }
 
 func cetakTransaksi() {
+	fmt.Println("-----------------------------------------------")
 	fmt.Println("Riwayat Transaksi:")
+	// Mencetak daftar riwayat transaksi
 	for i := 0; i < totaltransaksi; i++ {
 		transaction := listtransaksi[i]
-		fmt.Println("-----------------------------------------------")
 		fmt.Printf("Kode Transaksi: %d\n", transaction.ID+1)
-		fmt.Printf("Jumlah: %d\n", transaction.jumlah)
+		fmt.Printf("Jumlah: Rp.%d,-\n", transaction.jumlah)
 		fmt.Printf("Jenis: %s\n", transaction.jenis)
 		fmt.Println("-----------------------------------------------")
+		fmt.Println()
 	}
+	opsiRiwayatTransaksi()
+}
+
+func sortTransaksiDescend() {
+	// Insertion Sort
+	var temp Transaction
+	i := 1
+	for i <= len(listtransaksi)-1 {
+		j := i
+		temp = listtransaksi[j]
+		for j > 0 && temp.jumlah > listtransaksi[j-1].jumlah {
+			listtransaksi[j] = listtransaksi[j-1]
+			j = j - 1
+		}
+		listtransaksi[j] = temp
+		i = i + 1
+	}
+}
+
+func sortTransaksiAscend() {
+	// Selection Sort
+	var idx int
+	n := len(listtransaksi)
+	for pass := 1; pass <= n; pass++ {
+		idx = pass - 1
+		for j := 0; j < n; j++ {
+			if listtransaksi[idx].jumlah > listtransaksi[j].jumlah {
+				idx = j
+			}
+		}
+		temp := listtransaksi[idx]
+		listtransaksi[idx] = listtransaksi[pass-1]
+		listtransaksi[pass-1] = temp
+	}
+
+}
+
+func hapusRiwayat() {
+	var kode int
+	fmt.Println("-----------------------------------------------")
+	fmt.Print("Masukan kode transaksi yang ingin dihapus: ")
+	fmt.Scan(&kode)
+	for i := 0; i < totaltransaksi; i++ {
+		if listtransaksi[i].ID+1 == kode {
+			listtransaksi[i] = listtransaksi[i+1]
+			totaltransaksi--
+		}
+	}
+	fmt.Println("-----------------------------------------------")
 }
 
 func pembayaran() {
